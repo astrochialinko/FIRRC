@@ -8,6 +8,8 @@ This program aims to calculate the spectral index
 """
 import numpy as np
 import astropy.io.fits as pyfits
+from astropy.wcs import WCS
+from astropy.coordinates import SkyCoord
 import gvar as gv
 import matplotlib.pyplot as plt
 
@@ -24,6 +26,7 @@ PATH_CATALOG_CROSSMATCH = '../Data/COSMOS/Catalog/CrossMatch/'
 PATH_TABLE              = '../Data/Tables/'
 PATH_IMFIT              = '../Data/Log_imfit/'
 PATH_FIGURE             = '../Figures/'
+PATH_REGION             = '../Data/Regions/'
 
 CATALOG_FILENAME_LIST   =   [ 
     '%scosmos_jcmt_450um_2021cat_2020cat_3GHz_1d4GHz_irac_agnYYC_agn3GHz_deblended.fits'%(PATH_CATALOG_CROSSMATCH) 
@@ -33,6 +36,7 @@ IMG_FILENAME_LIST       =   [
     '%scosmos_vla_1d4GHz_lp_2010image_uJy.fits'%(PATH_DATA_VLA),
     '%scosmos_vla_1d4GHz_dp_2010image_uJy.fits'%(PATH_DATA_VLA)
                             ]
+IMG_LABEL_LIST          = ['3GHz', '1d4GHz_lp', '1d4GHz_dp']
 
 S_3GHZ_DET_LIMIT        = 5*2.3e-3      # 5 sigma detection limit (mJy/beam), from Smolčić+17
 S_1d4GHZ_DET_LIMIT      = 4*12e-3       # 4 sigma detection limit (mJy/beam), from Schinnerer+10
@@ -151,19 +155,19 @@ def main():
             spec_ind_3_1d4, spec_ind_3_1d4_err = MyStatistic.gv2arr(spec_ind_3_1d4_gv)
 
             # plot the figure (individual source only)
-            x_arr       = np.array([S_3GHz], dtype=float)
-            y_arr       = np.array([spec_ind_3_1d4], dtype=float)
-            x_err_arr   = np.array([S_3GHz_err], dtype=float)
-            y_err_arr   = np.array([spec_ind_3_1d4_err], dtype=float)
-            xlabel      = r'S$_{\rm 3 GHz}$ [mJy]'
-            c1_list     = ['navy']
-            c2_list     = ['royalblue']
-            marker_list = ['o']
-            line_list   = ['Gao(>4SNR)']
-            xlim_low, xlim_up = 0, 0.15
+            x_arr           = np.array([S_3GHz], dtype=float)
+            y_arr           = np.array([spec_ind_3_1d4], dtype=float)
+            x_err_arr       = np.array([S_3GHz_err], dtype=float)
+            y_err_arr       = np.array([spec_ind_3_1d4_err], dtype=float)
+            xlabel          = r'S$_{\rm 3 GHz}$ [mJy]'
+            c1_list         = ['navy']
+            c2_list         = ['royalblue']
+            marker_list     = ['o']
+            line_list       = ['Gao(>4SNR)']
+            xlim_low, xlim_up = 0   , 0.15
             ylim_low, ylim_up = -3.5, 0.5
-            slt_thld    = S_3GHZ_DET_LIMIT*3
-            slt_arr     = x_arr
+            slt_thld        = S_3GHZ_DET_LIMIT*3
+            slt_arr         = x_arr
             # plot_spec_ind(  csi, x_arr, y_arr, x_err_arr, y_err_arr, 
             #                 xlabel, c1_list, c2_list, marker_list, line_list,
             #                 xlim_low, xlim_up, ylim_low, ylim_up,
@@ -174,18 +178,55 @@ def main():
     # stacking
     #####################################################################################
     
-    # get ra and dec
-    coord_name_lst  = ['ra_3GHz', 'dec_3GHz']
-    coord_arr       = get_coord_wcs(slt_data_dict, coord_name_lst, is_savetxt=True)
- 
-    # create the region file (optional)
-
-
-    # transfer the wcs to pixel coordinate
-    for i, img_filename in enumerate(IMG_FILENAME_LIST):
-        csk = Stacking(img_filename)
     
-    # start stacking
+    for slt_name, slt_arr in slt_data_dict.items():
+
+        # get ra and dec
+        coord_wcs_nlst  = ['ra_3GHz', 'dec_3GHz', 'flux_3GHz', 'flux_err_3GHz', 'flux_1d4GHz', 'ferr_1d4GHz']
+        coord_wcs_fname = '%sCoord_wcs_3GHz_%s.txt'%(PATH_TABLE, slt_name)
+        coord_arr       = get_coord_wcs(slt_arr, coord_wcs_nlst, is_savetxt=True, outname=coord_wcs_fname)
+        ra_arr          = coord_arr.T[0]
+        dec_arr         = coord_arr.T[1]
+
+        # create the region file (optional)
+        outreg_name     = '%sCoord_wcs_3GHz_%s.reg'%(PATH_REGION, slt_name)
+        radius_arcs     = 5
+        reg_color       = 'green'
+        reg_width       = 2
+        make_region(coord_wcs_fname, outreg_name, radius_arcs, reg_color, reg_width)
+
+
+        # start stacking
+        for i, img_filename in enumerate(IMG_FILENAME_LIST):
+            csk = Stacking(img_filename)
+
+            # transfer the wcs to pixel coordinate
+            coord_pix_nlst  = ['ra_3GHz_pix', 'dec_3GHz_pix']
+            coord_pix_fname = '%sCoord_pix_%s_%s.txt'%(PATH_TABLE, IMG_LABEL_LIST[i], slt_name)
+            coord_pix_arr   = csk.wcs2pix(coord_arr, coord_pix_nlst, is_savetxt=True, outname=coord_pix_fname)
+            ra_pix_arr      = coord_pix_arr.T[0]
+            dec_pix_arr     = coord_pix_arr.T[1]
+
+            # set the stacking range
+
+
+            # stacking via weighted mean
+
+
+            # stacking via medium
+
+
+                # calculate the rms
+
+
+                # save the fitsfile
+
+
+                # plot the figure
+
+        
+    
+    
 
 
 
@@ -195,8 +236,45 @@ def main():
 #####################################################################################
 # function
 #####################################################################################
-def get_coord_wcs(slt_data_dict, column_name_lst, is_savetxt=False):
+
+
+def make_region(input_txt_name, output_reg_name='output.reg', radius_arcs=1, reg_color='green', reg_width=1):
     """
+    Generate a ds9 region file
+
+    Input Parameter:
+        input_txt_name      [str]       : Input txt filename that contain the information of RA and Dec
+        output_reg_name     [str]       : Output region filename.       Default: 'output.reg'
+        radius_arcs         [float]     : Radius of circle (arcsec).    Defualt: 1
+        reg_color           [str]       : Color of region.              Defualt: 'green'
+        reg_width           [int]       : Line width of region.         Defualt: 1
+    """
+    # load the input txt file (ra dec info)
+    radec_list = np.loadtxt(input_txt_name, dtype = str, delimiter=' ')
+    lines_num, item_num = np.shape(radec_list)
+
+    # Open the output regoin file and write the header
+    reg_file = open(output_reg_name, "w")
+    reg_file.write(
+        '# Region file format: DS9 version 4.1\n'
+        'global color={0} dashlist=8 3 width={1} font="helvetica 10 normal roman" '
+        'select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 '
+        'source=1\nfk5\n'.format(reg_color, reg_width))
+
+    for i in range(lines_num):
+        ra      = np.float(radec_list[i][0])    # ra        (deg)
+        dec     = np.float(radec_list[i][1])    # dec       (deg)
+        radius  = '%s"'%(radius_arcs)           # radius    (arcsec)
+        # write the region
+        reg_file.write("circle({0},{1},{2})\n".format(
+                        ra, dec, radius))
+    reg_file.close()
+
+
+def get_coord_wcs(slt_arr_dict, column_name_lst, is_savetxt=False, outname='coord_wcs.txt'):
+    """
+    Get the wvs coordinate from the input dict
+
     Input Parameter:
         slt_data_dict       [dict]          : 
             slt_data_dict: {slt_name, key: {column_name, key: selected data} }
@@ -204,22 +282,21 @@ def get_coord_wcs(slt_data_dict, column_name_lst, is_savetxt=False):
     Return:
         column_arr          [ndarray]       : the data 
     """
-    for slt_name, slt_arr in slt_data_dict.items():
+    row_num         = len(slt_arr_dict[column_name_lst[0]])
+    column_num      = len(column_name_lst)
+    column_arr      = np.zeros((row_num,column_num))
+    
+    for i, column_name in enumerate(column_name_lst):
+        column_arr.T[i] = slt_arr_dict[column_name]
         
-        row_num         = len(slt_arr[column_name_lst[0]])
-        column_num      = len(column_name_lst)
-        column_arr      = np.zeros((row_num,column_num))
-        
-        for i, column_name in enumerate(column_name_lst):
-            column_arr.T[i] = slt_arr[column_name]
-            
-        if is_savetxt:
-            # save the coordinate to the txt file
-            filename    = '%sCoord_wcs_%s.txt'%(PATH_TABLE, slt_name) 
-            columns     = ", ".join(column_name_lst)
-            np.savetxt(filename, column_arr, fmt='%f %f', header=columns)
+    if is_savetxt:
+        # save the coordinate to the txt file
+        columns     = " ".join(column_name_lst)
+        fmt_lst     = ['%f' for i in column_name_lst]
+        fmt_str     = ' '.join(fmt_lst)
+        np.savetxt(outname, column_arr, fmt=fmt_str, header=columns)
 
-        return column_arr
+    return column_arr
 
 def plot_spec_ind(csi, x_arr, y_arr, x_err_arr, y_err_arr, xlabel, c1_list, c2_list, marker_list, line_list,
                   xlim_low, xlim_up, ylim_low, ylim_up, is_thld=False, slt_thld=None, slt_arr=None):
