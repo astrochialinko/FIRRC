@@ -36,7 +36,13 @@ IMG_FILENAME_LIST       =   [
     '%scosmos_vla_1d4GHz_lp_2010image_uJy.fits'%(PATH_DATA_VLA),
     '%scosmos_vla_1d4GHz_dp_2010image_uJy.fits'%(PATH_DATA_VLA)
                             ]
+IMG_RMS_FILENAME_LIST   =   [
+    '%scosmos_vla_3GHz_2017rms_uJy.fits'%(PATH_DATA_VLA),
+    None,
+    None
+                            ]
 IMG_LABEL_LIST          = ['3GHz', '1d4GHz_lp', '1d4GHz_dp']
+IMG_RMS_LIST            = [ 2.3, 15, 12]    # rms (uJy/beam)
 
 S_3GHZ_DET_LIMIT        = 5*2.3e-3      # 5 sigma detection limit (mJy/beam), from Smolčić+17
 S_1d4GHZ_DET_LIMIT      = 4*12e-3       # 4 sigma detection limit (mJy/beam), from Schinnerer+10
@@ -208,7 +214,14 @@ def main():
             dec_pix_arr     = coord_pix_arr.T[1]
 
             # set the stacking range
+            img_rms_filename= IMG_RMS_FILENAME_LIST[i]
+            img_rms         = IMG_RMS_LIST[i]
 
+            stacking_stat   = 'mean'
+
+            for stacking_stat in ['mean', 'weighted_mean', 'medium']:
+                stacking_1d = csk.make_stacking_1d(img_rms_filename, img_rms, coord_pix_arr, stacking_stat)
+                print(IMG_LABEL_LIST[i], stacking_stat, stacking_1d)
 
             # stacking via weighted mean
 
