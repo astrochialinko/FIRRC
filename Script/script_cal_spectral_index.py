@@ -183,7 +183,7 @@ def main():
     #####################################################################################
     # stacking
     #####################################################################################
-    
+    stacking_half_width = 50
     
     for slt_name, slt_arr in slt_data_dict.items():
 
@@ -217,25 +217,16 @@ def main():
             img_rms_filename= IMG_RMS_FILENAME_LIST[i]
             img_rms         = IMG_RMS_LIST[i]
 
-            stacking_stat   = 'mean'
+            # set the stacking method
+            for stacking_stat in ['mean', 'weighted_mean', 'mediam']:
 
-            for stacking_stat in ['mean', 'weighted_mean', 'medium']:
-                stacking_1d = csk.make_stacking_1d(img_rms_filename, img_rms, coord_pix_arr, stacking_stat)
+                # do stacking
+                stackging_2d_fn = '%sStacking_%s_%s_%s.fits'%(PATH_DATA_STACKING, IMG_LABEL_LIST[i], slt_name, stacking_stat)
+                stacking_1d, stacking_2d = csk.make_stacking(img_rms_filename, img_rms, coord_pix_arr,
+                                                             stacking_stat, stacking_half_width, stackging_2d_fn)
                 print(IMG_LABEL_LIST[i], stacking_stat, stacking_1d)
-
-            # stacking via weighted mean
-
-
-            # stacking via medium
-
-
-                # calculate the rms
-
-
-                # save the fitsfile
-
-
-                # plot the figure
+            
+            # plot the figure
 
         
     
