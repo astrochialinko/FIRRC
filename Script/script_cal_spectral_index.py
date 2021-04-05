@@ -219,6 +219,7 @@ def main():
 
             # set the stacking method
             for stacking_stat in ['mean', 'weighted_mean', 'mediam']:
+            #for stacking_stat in ['mediam']:
 
                 # do stacking
                 stackging_2d_fn = '%sStacking_%s_%s_%s.fits'%(PATH_DATA_STACKING, IMG_LABEL_LIST[i], slt_name, stacking_stat)
