@@ -1,10 +1,10 @@
 """
-File: Func_table_crossmatch.py
+File: FuncTableCrossmatch.py
 Name: Chia-Lin Ko
 Create Date: Jun 09, 2021
 Last Modified Date: Jun 09, 2021
 ------------------------
-This program
+This program aims to crossmatch tables.
 
 Modified from Zhen-Kai Gao's script
 Modified from astroML.crossmatch.crossmatch
@@ -170,10 +170,15 @@ def merge_df(df1, df2, ind, dist=None):
         rep0 = [max(len(i), 0) for i in ind]
         count = np.repeat(rep0, rep)
         mdf['Count'] = count
-                
+           
     return mdf
 
 
-def best_match(mdf, match_id):
-    mdf = mdf.drop_duplicates(subset=[match_id], keep='first').reset_index(drop=True)
+def best_match(mdf, column):
+    mdf = mdf.drop_duplicates(subset=[column], keep='first').reset_index(drop=True)
+    return mdf
+
+
+def inner_join(mdf, column='Separation'):
+    mdf = mdf.dropna(subset=[column]).reset_index(drop=True)
     return mdf
