@@ -40,9 +40,10 @@ class Stacking:
 
         if f_dim == 4:
             fitsfiles = fitsfiles[0][0]
-            print('Covert the 4D image to 2D')
+            #print('Covert the 4D image to 2D')
         elif f_dim == 2:
-            print('The input fitfile is a 2D image.')
+            pass
+            #print('The input fitfile is a 2D image.')
         else:
             print('Please check the dimension of the input fitsfile')
 
@@ -50,7 +51,11 @@ class Stacking:
 
 
     def make_stacking(self, img_rms_fn, img_rms, coord_pix_ds9_arr, stacking_stat='mean', 
-                      stacking_half_width='20', stackging_2d_fn='stacking.fits'):
+                      stacking_half_width='20', stackging_2d_fn='stacking.fits', 
+                      img_label = None, slt_name = None,
+                      is_simultaneously_stack= False, second_img_fn = None, second_stacking_half_width= None,
+                      second_img_rms_fn= None, second_img_rms = None, second_coord_pix_ds9_arr = None
+                      ):
         """
         stack the image based on the input coordinate info
 
@@ -67,14 +72,15 @@ class Stacking:
             stacking_1d         [float]         : value of the stacking at the postion
             stacking_2d         [2d-ndarray]    : 2d image of the stacking
 
-        """
+        """        
+
         # set the range for stacking (2d array)  
         stacking_width = 2*stacking_half_width + 1      # the width (side length) of stacking area [pixel]
 
         # set the rms map
         img_rms_f           = self.make_rms_map(img_rms_fn, img_rms)
         img_rms_f           = self.make_image_2d(img_rms_f)
-        
+       
         # stacking in 2d
         stacking_num, column_num = np.shape(coord_pix_ds9_arr)
         stacking_1d_arr     = np.zeros(stacking_num)
@@ -85,27 +91,118 @@ class Stacking:
         ra_pix_ds9_arr      = coord_pix_ds9_arr.T[0]    # ra    (pixel, 1-based)
         dec_pix_ds9_arr     = coord_pix_ds9_arr.T[1]    # dec   (pixel, 1-based)
 
+        if is_simultaneously_stack:
+            second_stacking_width       = 2*second_stacking_half_width + 1
 
-        for i, coord_pix in enumerate(coord_pix_ds9_arr):    
+            second_img_f        = pyfits.getdata(second_img_fn)
+            second_img_f        = self.make_image_2d(second_img_f)
+            second_img_rms_f    = self.make_rms_map(second_img_rms_fn, second_img_rms)
+            second_img_rms_f    = self.make_image_2d(second_img_rms_f)
+            
+            second_stacking_num, second_column_num = np.shape(second_coord_pix_ds9_arr)
+            # 1-based (as in the FITS convention, for example coordinates coming from ds9)
+            second_ra_pix_ds9_arr       = second_coord_pix_ds9_arr.T[0]    # ra    (pixel, 1-based)
+            second_dec_pix_ds9_arr      = second_coord_pix_ds9_arr.T[1]    # dec   (pixel, 1-based)
+            
+
+        nan_2d_arr_num = 0
+        for i, coord_pix in enumerate(coord_pix_ds9_arr):   
+
             # 0-based (as in Numpy arrays)
-            ra_pix_np           = int(np.float(ra_pix_ds9_arr[i]) -1)  # ra    (pixel, 0-based)
-            dec_pix_np          = int(np.float(dec_pix_ds9_arr[i])-1)  # dec   (pixel, 0-based)
+            ra_pix_np           = int(int(ra_pix_ds9_arr[i]) -1)  # ra    (pixel, 0-based)
+            dec_pix_np          = int(int(dec_pix_ds9_arr[i])-1)  # dec   (pixel, 0-based)
             ra_pix_np_start     = ra_pix_np  - stacking_half_width
             ra_pix_np_end       = ra_pix_np  + stacking_half_width
             dec_pix_np_start    = dec_pix_np - stacking_half_width
             dec_pix_np_end      = dec_pix_np + stacking_half_width
 
             # stacking in 1d 
-            stacking_1d_arr[i]  = self.f[dec_pix_np][ra_pix_np]
-            rms_1d_arr[i]       = img_rms_f[dec_pix_np][ra_pix_np]
+            try:
+                stacking_1d_arr[i]  = self.f[dec_pix_np][ra_pix_np]
+                rms_1d_arr[i]       = img_rms_f[dec_pix_np][ra_pix_np]
+            except IndexError: # some sources are outside of (1.4 GHz) map
+                stacking_1d_arr[i]  = np.nan
+                rms_1d_arr[i]       = np.nan
+                #print('1D', i, ra_pix_np, dec_pix_np)
 
             # stacking in 2d 
             # split the 2d area
             stacking_2d_arr     = self.f[dec_pix_np_start:dec_pix_np_end+1].T[ra_pix_np_start:ra_pix_np_end+1].T
             rms_2d_arr          = img_rms_f[dec_pix_np_start:dec_pix_np_end+1].T[ra_pix_np_start:ra_pix_np_end+1].T 
+           
+
+            # save the individual soucres
+            is_save_individual = False
+            if is_save_individual:
+                path_data_individual = '../Data/COSMOS/Image/VLA/SubmmGao_sub/'
+                individual_2d_fn = '%s%s_%s_%s.fits'%(path_data_individual, img_label, slt_name, i)
+                pyfits.writeto(individual_2d_fn, stacking_2d_arr, self.f_hd, overwrite=True)
+
+
+            dec_len, ra_len = np.shape(stacking_2d_arr)
+            if (ra_len != stacking_width) or (dec_len != stacking_width):
+                stacking_1d_arr[i]  = np.nan
+                rms_1d_arr[i]       = np.nan
+                # stacking in 2d, set to np.nan array
+                stacking_2d_arr = rms_2d_arr = np.zeros((stacking_width, stacking_width))
+                stacking_2d_arr[:] = np.nan
+                rms_2d_arr[:] = np.nan
+                #print('2D', i, ra_pix_np, dec_pix_np)
+
+            is_simultaneously_stack = False
+            # check if both two images are not NAN 
+            if is_simultaneously_stack:
+                
+                second_ra_pix_np           = int(int(second_ra_pix_ds9_arr[i]) -1)  # ra    (pixel, 0-based)
+                second_dec_pix_np          = int(int(second_dec_pix_ds9_arr[i])-1)  # dec   (pixel, 0-based)
+                second_ra_pix_np_start     = second_ra_pix_np  - second_stacking_half_width
+                second_ra_pix_np_end       = second_ra_pix_np  + second_stacking_half_width
+                second_dec_pix_np_start    = second_dec_pix_np - second_stacking_half_width
+                second_dec_pix_np_end      = second_dec_pix_np + second_stacking_half_width
+
+                # 1d
+                try:
+                    second_stacking_1d_arr     = second_img_f[second_dec_pix_np][second_ra_pix_np]
+                except IndexError:
+                    #print('2: 1D', i, second_ra_pix_np, second_dec_pix_np)
+                    second_stacking_1d_arr     = np.nan
+
+                if second_stacking_1d_arr is np.nan:
+                    stacking_1d_arr[i]  = np.nan
+                    rms_1d_arr[i]       = np.nan
+
+                # 2d
+                second_stacking_2d_arr     = second_img_f[second_dec_pix_np_start:second_dec_pix_np_end+1].T[second_ra_pix_np_start:second_ra_pix_np_end+1].T
+                #second_rms_2d_arr          = img_rms_f[second_dec_pix_np_start:second_dec_pix_np_end+1].T[second_ra_pix_np_start:second_ra_pix_np_end+1].T 
+                second_dec_len, second_ra_len = np.shape(second_stacking_2d_arr)
+                if (second_ra_len != second_stacking_width) or (second_dec_len != second_stacking_width):
+                    stacking_1d_arr[i]  = np.nan
+                    rms_1d_arr[i]       = np.nan
+                    # stacking in 2d, set to np.nan array
+                    stacking_2d_arr = rms_2d_arr = np.zeros((stacking_width, stacking_width))
+                    stacking_2d_arr[:] = np.nan
+                    rms_2d_arr[:] = np.nan
+                    #print('2: 2D', i, second_ra_pix_np, second_dec_pix_np)
+
+            if np.isnan(stacking_2d_arr.sum()):
+                nan_2d_arr_num +=1
+
+
+            #print(i, ra_pix_np, dec_pix_np)
             # save the stacking image to a 3d array
             stacking_3d_arr[i] = stacking_2d_arr
             rms_3d_arr[i]      = rms_2d_arr
+
+        # is_save_individual = True
+        if is_save_individual:
+            path_table = '../Data/Tables/'
+            individual_txt_fn = '%sCoord_pix_ID_%s_%s.txt'%(path_table, img_label, slt_name)
+            txt_arr = np.c_[range(stacking_num), ra_pix_ds9_arr, dec_pix_ds9_arr]
+            columns     = 'ID, ra_pix_ds9, dec_pix_ds9'
+            fmt_lst     = ['%d' for _ in range(len(columns.split(',')))]
+            fmt_str     = ' '.join(fmt_lst)
+            np.savetxt(individual_txt_fn, txt_arr, fmt=fmt_str, header=columns)
+
 
         # stacking for different statistic method
         if stacking_stat == 'mean':
@@ -127,10 +224,13 @@ class Stacking:
         mask_half_width_pix = int(self.f_hd_d['bmaj_pix'])
         # theoretical error = orginal rms/ sqrt(N)
         stacking_err_theor  = np.divide(img_rms, np.sqrt(stacking_num))
-        stacking_err_corr   = self.cal_correlated_error(stacking_2d, mask_half_width_pix, num_times=1000)
+        #stacking_err_corr   = self.cal_correlated_error(stacking_2d, mask_half_width_pix, num_times=1000)
         # correlated error
-        print('theoretical error =', stacking_err_theor)
-        print('correlated error =', stacking_err_corr)
+        # print('Non-nan 1D: ', np.sum((~np.isnan(stacking_1d_arr))))
+        # print('Non-nan 2D: ', stacking_num - nan_2d_arr_num)
+        print('theoretical error = %.2f'%(stacking_err_theor))
+        print('theoretical S/N = %.2f'%(stacking_1d/stacking_err_theor))
+        #print('correlated error  = %.2f'%(stacking_err_corr))
 
         return stacking_1d, stacking_2d
 
