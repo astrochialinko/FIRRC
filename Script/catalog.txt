@@ -1,0 +1,45 @@
+# original path/filename                                                            new filename                             
+#---------------------------------------------------------------------------------------------------------------------------------------------
+
+# optical
+opt_COSMOS2015/COSMOS2015_Laigle+_v1.1.fits                                         cosmos_opt_cosmos_2015cat               _opt
+
+# Spitzer/IRAC 3.6, 4.5, 5.6, 8.0 um
+IR_Spitzer/scosmos_irac_200706.tbl                                                  cosmos_irac_2007cat                     _irac
+
+# Spitzer/MIPS 24 um
+IR_Spitzer/MIPS_24_LeFloch.tbl                                                      cosmos_mips_24um_LeFloch_2008cat        _24umLeFloch
+IR_Spitzer/mips24_whwang.fits                                                       cosmos_mips_24um_whwang_2020cat         _24umWang
+IR_Spitzer/scosmos_mips_24_GO3_200810.tbl                                           cosmos_mips_24um_GO3_2008cat            _24umGO3
+IR_Spitzer/scosmos_mips_24_GO2_200706.tbl                                           cosmos_mips_24um_GO2_2007cat            _24umGO2
+
+# Spitzer/MIPS 70 um
+IR_Spitzer/scosmos_mips_70_cat_v3.tbl                                               cosmos_mips_70um_2009cat                _70um
+
+# Spitzer/MIPS 160 um
+IR_Spitzer/scosmos_mips_160_cat_v3.tbl                                              cosmos_mips_160um_2009cat               _160um
+
+# Super-deblended
+#Super_Deblended/COSMOS_Super_Deblended_FIRmm_Catalog_20180719.fits                  cosmos_mips_24um_superDeblended_2018cat _24umSD
+
+# VLA 3 GHz COSMOS-XS Survey
+radio_VLA/COSMOS_XS/apjabb77at6_mrt.txt                                             cosmos_vla_3GHz_10GHz_XS_2021cat        _3GHzXS
+radio_VLA/3GHz/vla3_cosmos_sources_160321_public5sig.fits                           cosmos_vla_3GHz_2017cat                 _3GHzlp
+radio_VLA/3GHz/VLA_3GHz_counterpart_array_20170210_paper_smolcic_et_al.fits         cosmos_vla_3GHz_multiAGN_2017cat        _3GHzMultiAGN
+radio_VLA/3GHz/VLA_3GHz_counterpart_array_20170210_paper_delvecchio_et_al.fits      cosmos_vla_3GHz_Del_2017cat             _3GHzDel17
+
+# VLA 1.4 GHz / 20cm
+radio_VLA/COSMOS_XS/COSMOS_Lband_group_by_isl_False_correct_flux.fits               cosmos_vla_1d4GHz_XS_2021cat            _1d4GHzXS
+radio_VLA/1d4GHz/vla-cosmos_dp_sources_20110801.tbl                                 cosmos_vla_1d4GHz_dp_2011cat            _1d4GHzdp
+radio_VLA/1d4GHz/vla-cosmos_lp_sources_v2_20080615.tbl                              cosmos_vla_1d4GHz_lpv2_2008cat          _1d4GHzlpv2
+radio_VLA/1d4GHz/vla-cosmos_lp_sources_20060510.tbl                                 cosmos_vla_1d4GHz_lpv1_2006cat          _1d4GHzlpv1
+radio_VLA/1d4GHz/vla-cosmos_lp_multi_20060510.tbl                                   cosmos_vla_1d4GHz_lpv1_multi_2006cat    _1d4GHzlpv1multi
+radio_VLA/1d4GHz/vla-cosmos_pilot_20040729.tbl                                      cosmos_vla_1d4GHz_pilot_2004cat         _1d4GHzpilot
+
+# JCMT/SCUBA-2 450 um
+submm_JCMT/cosmos_450um_201216.fits                                                 cosmos_jcmt_450um_2021cat               _450umGao
+submm_JCMT/MasterCatalog_450.fits                                                   cosmos_jcmt_450um_2020cat               _450umLim
+submm_JCMT/STUDIES_SNR5_MAGPHYS.fits                                                cosmos_jcmt_450um_SEDUgne_2020cat       _450umSEDUgne
+
+# JCMT/SCUBA-2 850 um
+#submm_JCMT/cosmos_850um_final_v1_1.fits                                             cosmos_jcmt_850um_old_2021cat           _850GaoOld
